@@ -24,6 +24,7 @@ namespace SmartPot.Application.Core
         private static readonly UUID? UUID_CHARACTERISTIC_ERROR_STATE = UUID.FromString("00467768-6228-2272-4663-277478268002");
         private static readonly UUID? UUID_CHARACTERISTIC_RPC_RESULT = UUID.FromString("00467768-6228-2272-4663-277478268004");
         private static readonly UUID? UUID_CHARACTERISTIC_RPC = UUID.FromString("00467768-6228-2272-4663-277478268003");
+        private static readonly UUID? UUID_DESCRIPTOR_ENABLE = UUID.FromString("00002902-0000-1000-8000-00805f9b34fb");
 
         public interface IImprovCallback
         {
@@ -87,19 +88,17 @@ namespace SmartPot.Application.Core
             return String.Equals(device.Address, bluetoothDevice.Address);
         }
 
-        public void Connect(IImprovCallback callback)
+        public void Connect(Action<bool> callback)
         {
             if (State.Failed == state)
             {
-                callback.OnConnected(false);
+                callback.Invoke(false);
             }
-
-            onConnectedCallback = callback;
 
             if (State.NotConnected == state)
             {
                 state = State.Connecting;
-                queue.Enqueue(new Runnable(DoDeviceConnect));
+                queue.Enqueue(new ConnectSequence(device, context, callback));
             }
         }
 
@@ -233,6 +232,7 @@ namespace SmartPot.Application.Core
                 }
 
                 DeviceState = (DeviceState)value.ByteValue();
+                Debug.WriteLine($"Device state: {DeviceState}");
 
                 switch (state)
                 {
@@ -289,6 +289,7 @@ namespace SmartPot.Application.Core
                 {
                     case State.Connecting:
                     {
+                        Debug.WriteLine("DoSubscribeRpcResult");
                         queue.Enqueue(new Runnable(DoSubscribeRpcResult));
                         break;
                     }
@@ -437,18 +438,33 @@ namespace SmartPot.Application.Core
             ;
         }
 
+        private void DoWriteDescriptor(BluetoothGattDescriptor descriptor)
+        {
+            var success = bluetoothGatt!.WriteDescriptor(descriptor);
+
+            if (success)
+            {
+                return;
+            }
+
+            Debug.WriteLine($"[DoWriteDescriptor] result: {success}");
+        }
+
         private void DoSubscribeCurrentState()
         {
             var success = bluetoothGatt!.SetCharacteristicNotification(currentStateCharacteristic, true);
 
             if (success)
             {
-                var descriptor = currentStateCharacteristic?.Descriptors?.FirstOrDefault();
+                var descriptor = currentStateCharacteristic?.GetDescriptor(UUID_DESCRIPTOR_ENABLE);
+
+                Debug.WriteLine($"DoSubscribeCurrentState: descriptor: {descriptor?.Uuid}");
 
                 if (null != descriptor)
                 {
                     var enable = BluetoothGattDescriptor.EnableNotificationValue?.ToArray();
                     descriptor.SetValue(enable);
+                    queue.Enqueue(new Runnable<BluetoothGattDescriptor>(DoWriteDescriptor, descriptor));
                 }
 
                 errorStateCharacteristic = bluetoothGattService!.GetCharacteristic(UUID_CHARACTERISTIC_ERROR_STATE);
@@ -474,12 +490,15 @@ namespace SmartPot.Application.Core
 
             if (success)
             {
-                var descriptor = errorStateCharacteristic?.Descriptors?.FirstOrDefault();
+                var descriptor = errorStateCharacteristic?.GetDescriptor(UUID_DESCRIPTOR_ENABLE);
+
+                Debug.WriteLine($"DoSubscribeCurrentState: descriptor: {descriptor?.Uuid}");
 
                 if (null != descriptor)
                 {
                     var enable = BluetoothGattDescriptor.EnableNotificationValue?.ToArray();
                     descriptor.SetValue(enable);
+                    bluetoothGatt!.WriteDescriptor(descriptor);
                 }
 
                 rpcResultCharacteristic = bluetoothGattService!.GetCharacteristic(UUID_CHARACTERISTIC_RPC_RESULT);
@@ -503,14 +522,20 @@ namespace SmartPot.Application.Core
         {
             var success = bluetoothGatt!.SetCharacteristicNotification(rpcResultCharacteristic, true);
 
+            Debug.WriteLine($"SetCharacteristicNotification {rpcResultCharacteristic?.Uuid} success: {success}");
+
             if (success)
             {
-                var descriptor = rpcResultCharacteristic?.Descriptors?.FirstOrDefault();
+                var descriptor = rpcResultCharacteristic?.GetDescriptor(UUID_DESCRIPTOR_ENABLE);
+
+                Debug.WriteLine($"DoSubscribeCurrentState: descriptor: {descriptor?.Uuid}");
 
                 if (null != descriptor)
                 {
                     var enable = BluetoothGattDescriptor.EnableNotificationValue?.ToArray();
                     descriptor.SetValue(enable);
+
+                    var result = bluetoothGatt!.WriteDescriptor(descriptor);
                 }
 
                 rpcCommandCharacteristic = bluetoothGattService!.GetCharacteristic(UUID_CHARACTERISTIC_RPC);

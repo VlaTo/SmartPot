@@ -20,7 +20,8 @@ namespace SmartPot.Core.Connectivity
         private static readonly Guid CapsCharacteristicUuid = new("00467768-6228-2272-4663-277478268005");
 
         private bool started;
-        private string rpcResult;
+
+        private RpcResult rpcResult;
         private ImprovState currentState;
         private ImprovError errorState;
 
@@ -85,13 +86,29 @@ namespace SmartPot.Core.Connectivity
             }
         }
 
-        /// <summary>
-        /// Get/Set URL to send provision device when provisioning is complete.
-        /// </summary>
-        public string RedirectUrl
+        public RpcResult RpcResult
         {
-            get;
-            set;
+            get => rpcResult;
+            set
+            {
+                rpcResult = value;
+
+                if (null == rpcResultCharacteristic)
+                {
+                    return;
+                }
+
+                if (0 < rpcResultCharacteristic.SubscribedClients.Length)
+                {
+                    var buffer = SetupRpcResult();
+                    rpcResultCharacteristic.NotifyValue(buffer);
+                    Debug.WriteLine("Notifying RPC result");
+                }
+                else
+                {
+                    Debug.WriteLine("Notify RPC: no clients");
+                }
+            }
         }
 
         /// <summary>
@@ -100,10 +117,6 @@ namespace SmartPot.Core.Connectivity
         public ImprovManager()
         {
             started = false;
-            rpcResult = String.Empty;
-
-            RedirectUrl = String.Empty;
-
             Initialise();
         }
 
@@ -118,16 +131,18 @@ namespace SmartPot.Core.Connectivity
                 return;
             }
 
-            serviceProvider.StartAdvertising(
-                new GattServiceProviderAdvertisingParameters
-                {
-                    DeviceName = deviceName,
-                    IsConnectable = true,
-                    IsDiscoverable = true
-                }
-            );
-            
-            started = true;
+            if (null != serviceProvider)
+            {
+                serviceProvider.StartAdvertising(
+                    new GattServiceProviderAdvertisingParameters
+                    {
+                        DeviceName = deviceName,
+                        IsConnectable = true,
+                        IsDiscoverable = true
+                    }
+                );
+                started = true;
+            }
         }
 
         /// <summary>
@@ -135,7 +150,7 @@ namespace SmartPot.Core.Connectivity
         /// </summary>
         public void Stop()
         {
-            if (started)
+            if (started && null != serviceProvider)
             {
                 serviceProvider.StopAdvertising();
                 started = false;
@@ -206,8 +221,9 @@ namespace SmartPot.Core.Connectivity
         /// <returns>0 if no error</returns>
         private void Initialise()
         {
-            CurrentState = ImprovState.AuthorizationRequired;
-            ErrorState = ImprovError.NoError;
+            currentState = ImprovState.AuthorizationRequired;
+            errorState = ImprovError.NoError;
+            rpcResult = RpcResult.Empty;
 
             var result = GattServiceProvider.Create(ServiceUuid);
 
@@ -235,13 +251,14 @@ namespace SmartPot.Core.Connectivity
 
         private static GattLocalCharacteristic CreateCurrentStateCharacteristicConfig(GattLocalService service)
         {
-            var config = new GattLocalCharacteristicParameters
-            {
-                CharacteristicProperties = GattCharacteristicProperties.Read | GattCharacteristicProperties.Notify,
-                UserDescription = "Current State"
-            };
-
-            var result = service.CreateCharacteristic(CurrentStateCharacteristicUuid, config);
+            var result = service.CreateCharacteristic(
+                CurrentStateCharacteristicUuid,
+                new GattLocalCharacteristicParameters
+                {
+                    CharacteristicProperties = GattCharacteristicProperties.Read | GattCharacteristicProperties.Notify,
+                    UserDescription = "Current State"
+                }
+            );
 
             if (BluetoothError.Success != result.Error)
             {
@@ -254,13 +271,14 @@ namespace SmartPot.Core.Connectivity
 
         private static GattLocalCharacteristic CreateErrorStateCharacteristicConfig(GattLocalService service)
         {
-            var config = new GattLocalCharacteristicParameters
-            {
-                CharacteristicProperties = GattCharacteristicProperties.Read | GattCharacteristicProperties.Notify,
-                UserDescription = "Error State"
-            };
-
-            var result = service.CreateCharacteristic(ErrorStateCharacteristicUuid, config);
+            var result = service.CreateCharacteristic(
+                ErrorStateCharacteristicUuid,
+                new GattLocalCharacteristicParameters
+                {
+                    CharacteristicProperties = GattCharacteristicProperties.Read | GattCharacteristicProperties.Notify,
+                    UserDescription = "Error State"
+                }
+            );
 
             if (BluetoothError.Success != result.Error)
             {
@@ -273,13 +291,14 @@ namespace SmartPot.Core.Connectivity
 
         private static GattLocalCharacteristic CreateRpcCommandCharacteristicConfig(GattLocalService service)
         {
-            var config = new GattLocalCharacteristicParameters
-            {
-                CharacteristicProperties = GattCharacteristicProperties.Write,
-                UserDescription = "RPC command"
-            };
-
-            var result = service.CreateCharacteristic(RpcCommandCharacteristicUuid, config);
+            var result = service.CreateCharacteristic(
+                RpcCommandCharacteristicUuid,
+                new GattLocalCharacteristicParameters
+                {
+                    CharacteristicProperties = GattCharacteristicProperties.Write,
+                    UserDescription = "RPC command"
+                }
+            );
 
             if (BluetoothError.Success != result.Error)
             {
@@ -292,13 +311,14 @@ namespace SmartPot.Core.Connectivity
 
         private static GattLocalCharacteristic CreateRpcResultStateCharacteristicConfig(GattLocalService service)
         {
-            var config = new GattLocalCharacteristicParameters
-            {
-                CharacteristicProperties = GattCharacteristicProperties.Read | GattCharacteristicProperties.Notify,
-                UserDescription = "RPC result"
-            };
-
-            var result = service.CreateCharacteristic(RpcResultCharacteristicUuid, config);
+            var result = service.CreateCharacteristic(
+                RpcResultCharacteristicUuid,
+                new GattLocalCharacteristicParameters
+                {
+                    CharacteristicProperties = GattCharacteristicProperties.Read | GattCharacteristicProperties.Notify,
+                    UserDescription = "RPC result"
+                }
+            );
 
             if (BluetoothError.Success != result.Error)
             {
@@ -311,14 +331,15 @@ namespace SmartPot.Core.Connectivity
 
         private static GattLocalCharacteristic CreateCapabilitiesCharacteristicConfig(GattLocalService service)
         {
-            var config = new GattLocalCharacteristicParameters
-            {
-                CharacteristicProperties = GattCharacteristicProperties.Read,
-                UserDescription = "Capabilities",
-                StaticValue = GetByteBuffer(0x13)
-            };
-
-            var result = service.CreateCharacteristic(CapsCharacteristicUuid, config);
+            var result = service.CreateCharacteristic(
+                CapsCharacteristicUuid,
+                new GattLocalCharacteristicParameters
+                {
+                    CharacteristicProperties = GattCharacteristicProperties.Read,
+                    UserDescription = "Capabilities",
+                    StaticValue = GetByteBuffer(0x13)
+                }
+            );
 
             if (BluetoothError.Success != result.Error)
             {
@@ -327,13 +348,6 @@ namespace SmartPot.Core.Connectivity
             }
 
             return result.Characteristic;
-        }
-
-        private static Buffer GetByteBuffer(byte value)
-        {
-            DataWriter dw = new();
-            dw.WriteByte(value);
-            return dw.DetachBuffer();
         }
 
         #region Characteristic event handlers
@@ -375,7 +389,7 @@ namespace SmartPot.Core.Connectivity
             {
                 case RpcCommands.SetWifiSettings:
                 {
-                    ProvisionDevice(command, reader);
+                    ProvisionDevice(request, command, reader);
                     break;
                 }
 
@@ -395,7 +409,7 @@ namespace SmartPot.Core.Connectivity
             }
         }
 
-        private void ProvisionDevice(byte command, DataReader reader)
+        private void ProvisionDevice(GattWriteRequest request, byte command, DataReader reader)
         {
             //  Send WiFi settings
             if (ImprovState.Authorized != CurrentState)
@@ -408,11 +422,21 @@ namespace SmartPot.Core.Connectivity
             var password = ReadPassword(reader);
             var checksum = reader.ReadByte();
 
-            ErrorState = ImprovError.NoError;
+            // Respond if Write requires response
+            if (GattWriteOption.WriteWithResponse == request.Option)
+            {
+                Debug.WriteLine("Respond to command request");
+                request.Respond();
+            }
+            else
+            {
+                Debug.WriteLine("No Response to command required");
+            }
 
-            Debug.WriteLine($"Rpc Send Wifi SSID:{ssid} Password:{password ?? "N/A"}");
+            Debug.WriteLine($"Rpc Apply Wifi SSID:{ssid} Password:{password ?? "N/A"}");
 
             // Start provisioning
+            ErrorState = ImprovError.NoError;
             CurrentState = ImprovState.Provisioning;
 
             // User handling provisioning ?
@@ -443,16 +467,15 @@ namespace SmartPot.Core.Connectivity
 
             if (ImprovState.Provisioned == CurrentState)
             {
-                rpcResult = "success";
+                RpcResult = new RpcResult(command, "success");
                 ErrorState = ImprovError.NoError;
+
                 RaiseOnProvisioningComplete(EventArgs.Empty);
-            }
-            else
-            {
-                rpcResult = "unknown";
+
+                return;
             }
 
-            NotifyRpcResult(command);
+            RpcResult = new RpcResult(command, "unknown");
         }
 
         private void OnRpcCommandWriteRequested(GattLocalCharacteristic sender, GattWriteRequestedEventArgs e)
@@ -473,36 +496,27 @@ namespace SmartPot.Core.Connectivity
             HandleRequest(request);
 
             // Respond if Write requires response
-            if (GattWriteOption.WriteWithResponse == request.Option)
+            /*if (GattWriteOption.WriteWithResponse == request.Option)
             {
                 request.Respond();
-            }
+            }*/
         }
 
-        private Buffer SetupRpcResult(byte command)
+        private Buffer SetupRpcResult()
         {
-            byte cs = 0;
-            var resultBytes = Encoding.UTF8.GetBytes(rpcResult);
+            var dw = new DataWriter();
+            var resultBytes = Encoding.UTF8.GetBytes(rpcResult.Status);
 
-            DataWriter dw = new();
-            dw.WriteByte(command); // command
-
-            byte dataLength = (byte)(resultBytes.Length + 1);
-            dw.WriteByte(dataLength); // data length
-            cs += dataLength;
-
-            dw.WriteByte((byte)resultBytes.Length); // string 1 length
-            cs += (byte)resultBytes.Length;
-
-            dw.WriteBytes(resultBytes);
-            CheckSum(ref cs, resultBytes);
-
-            dw.WriteByte(cs);
+            dw.WriteByte(rpcResult.Command);                // command
+            dw.WriteByte((byte)(resultBytes.Length + 1));   // data length
+            dw.WriteByte((byte)resultBytes.Length);         // status length
+            dw.WriteBytes(resultBytes);                     // actual status
+            dw.WriteByte(0);                                // checksum
 
             return dw.DetachBuffer();
         }
 
-        private void NotifyRpcResult(byte command)
+        /*private void NotifyRpcResult(byte command)
         {
             // Notify change in value
             if (null != rpcResultCharacteristic)
@@ -510,13 +524,16 @@ namespace SmartPot.Core.Connectivity
                 Debug.WriteLine($"Notify rpc result:{rpcResult}");
                 rpcResultCharacteristic.NotifyValue(SetupRpcResult(command));
             }
-        }
+        }*/
 
         private void OnRpcResultReadRequested(GattLocalCharacteristic sender, GattReadRequestedEventArgs e)
         {
+            Console.WriteLine($"RpcResult_ReadRequested: command: {rpcResult.Command}, status: {rpcResult.Status}");
+
             var request = e.GetRequest();
-            Console.WriteLine($"RpcResult_ReadRequested {rpcResult}");
-            request.RespondWithValue(SetupRpcResult(0));
+            var buffer = SetupRpcResult();
+            
+            request.RespondWithValue(buffer);
         }
 
         #endregion
@@ -557,6 +574,8 @@ namespace SmartPot.Core.Connectivity
                 OnIdentify.Invoke(this, e);
             }
         }
+
+        private static Buffer GetByteBuffer(byte value) => new Buffer(new[] { value });
 
         private static string ReadSsid(DataReader reader)
         {

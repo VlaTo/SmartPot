@@ -82,23 +82,54 @@ namespace SmartPot
             // For out test we will just Authorise
             improvManager.Authorize(true);
             
-            display.DrawString(0, 0, "Waiting for");
-            display.DrawString(0, 11, "provisioning");
-            display.Display();
-
             // Now wait for Device to be Provisioned
             // we could also just use the OnProvisioningComplete event
+            var lastState = improvManager.CurrentState;
+
             while (ImprovState.Provisioned != improvManager.CurrentState)
             {
+                var currentState = improvManager.CurrentState;
+
+                if (lastState != currentState)
+                {
+                    switch (currentState)
+                    {
+                        case ImprovState.Authorized:
+                        {
+                            display.DrawString(0, 0, "Waiting for");
+                            display.DrawString(0, 11, "provision");
+                            display.Display();
+
+                            break;
+                        }
+
+                        case ImprovState.Provisioning:
+                        {
+                            display.DrawString(0, 0, "Provisioning");
+                            //display.DrawString(0, 11, "provisioned");
+                            display.Display();
+
+                            break;
+                        }
+
+                        case ImprovState.Provisioned:
+                        {
+                            display.DrawString(0, 0, "Device");
+                            display.DrawString(0, 11, "provisioned");
+                            display.Display();
+
+                            break;
+                        }
+                    }
+
+                    lastState = currentState;
+                }
+
                 Thread.Sleep(100);
             }
 
             improvManager.Stop();
             
-            display.DrawString(0, 0, "Device");
-            display.DrawString(0, 11, "provisioned");
-            display.Display();
-
             /*var host = Host
                 .CreateDefaultBuilder()
                 .ConfigureServices(services =>

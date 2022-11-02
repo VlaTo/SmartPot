@@ -24,6 +24,7 @@
     <Compile Include="Core\Connectivity\ImprovError.cs" />
     <Compile Include="Core\Connectivity\ImprovState.cs" />
     <Compile Include="Core\Connectivity\ProvisionedEventArgs.cs" />
+    <Compile Include="Core\Connectivity\RpcResult.cs" />
     <Compile Include="Core\Crc8.cs" />
     <Compile Include="Core\Devices\At24Cxx.cs" />
     <Compile Include="Core\Devices\Display.cs" />
@@ -32,6 +33,9 @@
     <Compile Include="Core\Hosted\Services\UserControllerService.cs" />
     <Compile Include="Core\Hosted\UserController.cs" />
     <Compile Include="Core\IUserControllerState.cs" />
+    <Compile Include="Core\Messaging\IMessage.cs" />
+    <Compile Include="Core\Messaging\MessageHub.cs" />
+    <Compile Include="Core\Messaging\MessageQueue.cs" />
     <Compile Include="Core\Services\IDateTimeProvider.cs" />
     <Compile Include="Core\Services\RtcDateTimeProvider.cs" />
     <Compile Include="Core\UI\HomeScreen.cs" />

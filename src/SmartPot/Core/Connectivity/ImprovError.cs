@@ -3,7 +3,7 @@
     /// <summary>
     /// Improv error states.
     /// </summary>
-    internal enum ImprovError
+    internal enum ImprovError : byte
     {
         /// <summary>
         /// This shows there is no current error state.
