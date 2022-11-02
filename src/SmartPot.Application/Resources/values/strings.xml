@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">App1</string>
+    
+	<string name="action_start_scanning">Scan</string>
+	<string name="action_stop_scanning">Stop</string>
+
+    <string name="message_permissions_denied">Permissions denied</string>
+    
+	<string name="action_device_connect">Connect</string>
+	<string name="action_device_disconnect">Disconnect</string>
+</resources>

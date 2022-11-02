@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp">
+
+    <TextView
+		android:id="@+id/item_device_name"
+        android:layout_width="match_parent"
+        android:layout_height="24dp"
+		android:textAppearance="@style/TextAppearance.AppCompat.Title"
+	/>
+
+    <TextView
+		android:id="@+id/item_device_address"
+        android:layout_width="match_parent"
+        android:layout_height="24dp"
+		android:layout_below="@id/item_device_name"
+		android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+    />
+
+</RelativeLayout>
