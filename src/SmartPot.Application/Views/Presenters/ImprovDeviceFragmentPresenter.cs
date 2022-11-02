@@ -12,7 +12,7 @@ using ImprovManager = SmartPot.Application.Core.ImprovManager;
 
 namespace SmartPot.Application.Views.Presenters
 {
-    public class ImprovDeviceFragmentPresenter : ImprovManager.ICallback, ImprovDevice.IImprovCallback, CredentialsDialog.IResultListener
+    public class ImprovDeviceFragmentPresenter : ImprovManager.ICallback, CredentialsDialog.IResultListener
     {
         private ImprovDevice? improvDevice;
         private MainActivity? parentActivity;
@@ -79,7 +79,7 @@ namespace SmartPot.Application.Views.Presenters
                     connectMenuItem?.SetVisible(false);
                     disconnectMenuItem?.SetVisible(true);
 
-                    improvDevice?.Connect(this);
+                    improvDevice?.Connect();
 
                     return true;
                 }
@@ -126,7 +126,7 @@ namespace SmartPot.Application.Views.Presenters
 
         #region ImprovDevice callback
 
-        void ImprovDevice.IImprovCallback.OnConnected(bool connected)
+        /*void ImprovDevice.IImprovCallback.OnConnected(bool connected)
         {
             MainThread
                 .InvokeOnMainThreadAsync(() =>
@@ -153,15 +153,15 @@ namespace SmartPot.Application.Views.Presenters
                     }
                 })
                 .FireAndForget();
-        }
+        }*/
 
-        void ImprovDevice.IImprovCallback.OnCredentialsSent()
+        /*void ImprovDevice.IImprovCallback.OnCredentialsSent()
         {
             if (null != currentStateTextView)
             {
                 currentStateTextView.Text = "Sent";
             }
-        }
+        }*/
 
         #endregion
     }

@@ -64,15 +64,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\ClickListener.cs" />
-    <Compile Include="Core\ConnectSequence.cs" />
     <Compile Include="Core\DeviceState.cs" />
     <Compile Include="Core\ErrorCode.cs" />
     <Compile Include="Core\ImprovDevice.cs" />
+    <Compile Include="Core\ImprovDevice.Callbacks.cs" />
+    <Compile Include="Core\ImprovDevice.ConnectSequence.cs" />
+    <Compile Include="Core\ImprovDevice.SendCredentialsSequence.cs" />
     <Compile Include="Core\ImprovManager.BluetoothScanCallback.cs" />
     <Compile Include="Core\ImprovManager.cs" />
-    <Compile Include="Core\ImprovManager.BluetoothDeviceCallback.cs" />
+    <Compile Include="Core\ImprovDevice.BluetoothDeviceCallback.cs" />
     <Compile Include="Core\Payload.cs" />
     <Compile Include="Core\Runnable.cs" />
+    <Compile Include="Core\Stub.cs" />
     <Compile Include="Core\WorkItemQueue.cs" />
     <Compile Include="Views\DeviceListFragment.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />

@@ -39,10 +39,18 @@ namespace SmartPot.Application.Core
             return this;
         }
         
-        public Payload Write(byte[] bytes)
+        public Payload Write(byte[]? bytes)
         {
-            stream.WriteByte((byte)bytes.Length);
-            stream.Write(bytes);
+            if (null == bytes || 0 == bytes.Length)
+            {
+                stream.WriteByte(0);
+            }
+            else
+            {
+                stream.WriteByte((byte)bytes.Length);
+                stream.Write(bytes);
+            }
+
             return this;
         }
         
