@@ -9,9 +9,9 @@ namespace SmartPot.Application.Core
     {
         private sealed class BluetoothScanCallback : ScanCallback
         {
-            private readonly SmartPot.Application.Core.ImprovManager manager;
+            private readonly ImprovManager manager;
 
-            public BluetoothScanCallback(SmartPot.Application.Core.ImprovManager manager)
+            public BluetoothScanCallback(ImprovManager manager)
             {
                 this.manager = manager;
             }
