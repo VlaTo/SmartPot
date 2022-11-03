@@ -120,8 +120,8 @@ namespace SmartPot.Application.Core
 
                 if (null != value)
                 {
-                    var length = value.Length;
-                    Debug.WriteLine($"RPC result length: {length}");
+                    RpcResult = RpcResult.From(value);
+                    Debug.WriteLine($"RPC result: {RpcResult.Command}, \"{RpcResult.Status}\"");
 
                     if (waiters.TryPop(out var handler))
                     {

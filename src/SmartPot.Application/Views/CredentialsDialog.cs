@@ -1,28 +1,34 @@
 ﻿
 #nullable enable
 
+using Android.App;
 using Android.OS;
 using Android.Util;
 using Android.Views;
 using AndroidX.AppCompat.App;
 using SmartPot.Application.Views.Presenters;
+using static SmartPot.Application.Views.Presenters.CredentialsDialogPresenter;
 
 namespace SmartPot.Application.Views
 {
     /// <summary>
     /// 
     /// </summary>
-    public class CredentialsDialog : AppCompatDialogFragment
+    public class CredentialsDialog : AppCompatDialogFragment, IActionCallback
     {
         private CredentialsDialogPresenter? presenter;
-        private IResultListener? resultListener;
+        private IDialogResultListener? resultListener;
 
-        public interface IResultListener
+        #region IDialogResultListener
+
+        public interface IDialogResultListener
         {
-            void OnSend(string ssid, string? password);
+            void OnSuccess(Dialog dialog, string ssid, string? password);
 
-            void OnDismiss();
+            void OnDismiss(Dialog dialog);
         }
+
+        #endregion
 
         public static CredentialsDialog NewInstance()
         {
@@ -47,11 +53,7 @@ namespace SmartPot.Application.Views
             if (null != view)
             {
                 presenter?.AttachView(view);
-
-                if (null != resultListener)
-                {
-                    presenter?.SetResultListener(resultListener);
-                }
+                presenter?.SetActionCallbacks(this);
 
                 return view;
             }
@@ -74,7 +76,8 @@ namespace SmartPot.Application.Views
 
             if (null != displayMetrics)
             {
-                var width = displayMetrics.WidthPixels - (int)TypedValue.ApplyDimension(ComplexUnitType.Dip, 52.0f, displayMetrics);
+                var width = displayMetrics.WidthPixels -
+                            (int)TypedValue.ApplyDimension(ComplexUnitType.Dip, 52.0f, displayMetrics);
                 //var height = displayMetrics.HeightPixels - (int)TypedValue.ApplyDimension(ComplexUnitType.Dip, 104.0f, displayMetrics);
                 var layoutParams = window.Attributes;
 
@@ -95,19 +98,45 @@ namespace SmartPot.Application.Views
             presenter = null;
         }
 
-        public CredentialsDialog SetResultListener(IResultListener listener)
+        public void AddDialogResultListener(IDialogResultListener listener)
         {
-            if (null != presenter)
-            {
-                presenter.SetResultListener(listener);
-            }
-            else
-            {
-                resultListener = listener;
-            }
-
-            return this;
+            resultListener = listener;
         }
+
+        #region IActionCallback
+
+        void IActionCallback.OnAction(DialogAction action)
+        {
+            if (null != resultListener)
+            {
+                switch (action)
+                {
+                    case DialogAction.Positive:
+                    {
+                        var ssid = presenter?.Ssid;
+                        var password = presenter?.Password;
+
+                        resultListener.OnSuccess(Dialog, ssid!, password);
+
+                        break;
+                    }
+
+                    case DialogAction.Negative:
+                    {
+                        resultListener.OnDismiss(Dialog);
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        #endregion
     }
 }
 

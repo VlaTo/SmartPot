@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SmartPot.ImageConverter": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Temp\\logo.bin"
+    }
+  }
+}

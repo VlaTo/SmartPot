@@ -16,12 +16,13 @@ using AndroidX.RecyclerView.Widget;
 using AndroidX.SwipeRefreshLayout.Widget;
 using SmartPot.Application.Core;
 using Xamarin.Essentials;
+using static Android.Bluetooth.BluetoothClass;
 using FragmentTransaction = AndroidX.Fragment.App.FragmentTransaction;
 using ImprovManager = SmartPot.Application.Core.ImprovManager;
 
 namespace SmartPot.Application.Views.Presenters
 {
-    internal sealed class DeviceListFragmentPresenter : ImprovManager.ICallback
+    internal sealed class DeviceListFragmentPresenter
     {
         private readonly Context context;
         private readonly List<ImprovDevice> devices;
@@ -46,8 +47,6 @@ namespace SmartPot.Application.Views.Presenters
             layout = view?.FindViewById<SwipeRefreshLayout>(Resource.Id.swipe_refresh_layout);
             devicesList = view?.FindViewById<RecyclerView>(Resource.Id.devices_list);
 
-            improvManager.AddCallback(this);
-
             if (null != layout)
             {
                 layout.SetOnRefreshListener(new RefreshListener(OnRefreshCallback));
@@ -59,6 +58,12 @@ namespace SmartPot.Application.Views.Presenters
                 devicesList.SetAdapter(adapter);
                 devicesList.AddItemDecoration(new OffsetItemDecorator(16, 8));
                 devicesList.AddItemDecoration(new DividerItemDecoration(context, 0));
+            }
+
+            if (null != improvManager)
+            {
+                improvManager.ScanStateChanged += OnScanStateChanged;
+                improvManager.FoundDevice += OnFoundDevice;
             }
         }
 
@@ -132,10 +137,10 @@ namespace SmartPot.Application.Views.Presenters
             );
         }
 
-        #region ICallback
-
-        void ImprovManager.ICallback.OnScanningStateChanged(bool scanning)
+        private void OnScanStateChanged(object sender, EventArgs e)
         {
+            var scanning = improvManager?.IsScanning ?? false;
+
             System.Diagnostics.Debug.WriteLine($"Scanning state changed: {scanning}");
 
             if (null != layout)
@@ -147,16 +152,9 @@ namespace SmartPot.Application.Views.Presenters
             stopScanningMenuItem?.SetVisible(scanning);
         }
 
-        void ImprovManager.ICallback.OnDeviceFound(ImprovDevice device)
+        private void OnFoundDevice(object sender, FoundDeviceEventArgs e)
         {
-            OnDeviceFound(device);
-        }
-
-        #endregion
-
-        private void OnDeviceFound(ImprovDevice device)
-        {
-            devices.Add(device);
+            devices.Add(e.Device);
 
             if (null != adapter)
             {
@@ -172,12 +170,14 @@ namespace SmartPot.Application.Views.Presenters
                 .SetTransition(FragmentTransaction.TransitFragmentOpen)
                 .AddToBackStack("ImprovDevice")
                 .Replace(Resource.Id.navigation_container, fragment);
-            improvManager?.RemoveCallback(this);
-            transaction?.Commit();
-        }
 
-        private void OnScanningStateChanged(bool value)
-        {
+            if (null != improvManager)
+            {
+                improvManager.ScanStateChanged -= OnScanStateChanged;
+                improvManager.FoundDevice -= OnFoundDevice;
+            }
+
+            transaction?.Commit();
         }
 
         #region RefreshListener

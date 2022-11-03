@@ -41,8 +41,15 @@
     <Compile Include="Core\UI\HomeScreen.cs" />
     <Compile Include="Core\UI\IScreen.cs" />
     <Compile Include="Core\UI\IUpdateable.cs" />
+    <Compile Include="InternalWifiSettingsProvider.cs" />
+    <Compile Include="IWifiSettingsProvider.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resource.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resource.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Iot.Device.Common.NumberHelper">
@@ -71,6 +78,9 @@
     </Reference>
     <Reference Include="nanoFramework.Networking.Sntp">
       <HintPath>packages\nanoFramework.Networking.Sntp.1.6.1\lib\nanoFramework.Networking.Sntp.dll</HintPath>
+    </Reference>
+    <Reference Include="nanoFramework.ResourceManager">
+      <HintPath>..\..\packages\nanoFramework.ResourceManager.1.2.7\lib\nanoFramework.ResourceManager.dll</HintPath>
     </Reference>
     <Reference Include="nanoFramework.Runtime.Events">
       <HintPath>packages\nanoFramework.Runtime.Events.1.10.0\lib\nanoFramework.Runtime.Events.dll</HintPath>
@@ -111,9 +121,22 @@
     <Reference Include="UnitsNet.Temperature">
       <HintPath>packages\UnitsNet.nanoFramework.Temperature.4.145.0\lib\UnitsNet.Temperature.dll</HintPath>
     </Reference>
+    <Reference Include="Windows.Storage">
+      <HintPath>..\..\packages\nanoFramework.Windows.Storage.1.5.6\lib\Windows.Storage.dll</HintPath>
+    </Reference>
+    <Reference Include="Windows.Storage.Streams">
+      <HintPath>..\..\packages\nanoFramework.Windows.Storage.Streams.1.14.8\lib\Windows.Storage.Streams.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Resources\logo.bin" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resource.resx">
+      <Generator>nFResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(NanoFrameworkProjectSystemPath)NFProjectSystem.CSharp.targets" Condition="Exists('$(NanoFrameworkProjectSystemPath)NFProjectSystem.CSharp.targets')" />
   <ProjectExtensions>

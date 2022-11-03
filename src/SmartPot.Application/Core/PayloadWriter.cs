@@ -7,22 +7,22 @@ using System.Text;
 
 namespace SmartPot.Application.Core
 {
-    internal sealed class Payload
+    internal sealed class PayloadWriter
     {
         private readonly MemoryStream stream;
 
-        public Payload()
+        public PayloadWriter()
         {
             stream = new MemoryStream();
         }
 
-        public Payload Write(byte value)
+        public PayloadWriter WriteByte(byte value)
         {
             stream.WriteByte(value);
             return this;
         }
 
-        public Payload Write(string? value, Encoding encoding)
+        public PayloadWriter WriteString(string? value, Encoding encoding)
         {
             if (String.IsNullOrEmpty(value))
             {
@@ -39,7 +39,7 @@ namespace SmartPot.Application.Core
             return this;
         }
         
-        public Payload Write(byte[]? bytes)
+        public PayloadWriter WriteBytes(byte[]? bytes)
         {
             if (null == bytes || 0 == bytes.Length)
             {
@@ -54,7 +54,7 @@ namespace SmartPot.Application.Core
             return this;
         }
         
-        public Payload Write(Span<byte> span)
+        public PayloadWriter WriteBytes(Span<byte> span)
         {
             stream.WriteByte((byte)span.Length);
             stream.Write(span);

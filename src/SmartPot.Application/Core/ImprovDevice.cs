@@ -15,6 +15,38 @@ namespace SmartPot.Application.Core
     /// <summary>
     /// 
     /// </summary>
+    /*public sealed class ConnectStateEventArgs : EventArgs
+    {
+        public bool IsConnected
+        {
+            get;
+        }
+
+        public ConnectStateEventArgs(bool isConnected)
+        {
+            IsConnected = isConnected;
+        }
+    }*/
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /*public sealed class RpcResultEventArgs : EventArgs
+    {
+        public RpcResult RpcResult
+        {
+            get;
+        }
+
+        public RpcResultEventArgs(RpcResult rpcResult)
+        {
+            RpcResult = rpcResult;
+        }
+    }*/
+
+    /// <summary>
+    /// 
+    /// </summary>
     [DebuggerTypeProxy(typeof(ImprovTypeProxy))]
     [DebuggerDisplay("Name = {Name}, Address = {Address}")]
     public sealed partial class ImprovDevice : Java.Lang.Object, IEquatable<ImprovDevice>
@@ -59,7 +91,17 @@ namespace SmartPot.Application.Core
             private set;
         }
 
+        public RpcResult RpcResult
+        {
+            get;
+            private set;
+        }
+
         public bool IsConnected => SequenceStage.Connected == stage;
+
+        public event EventHandler? ConnectStateChanged;
+
+        public event EventHandler? RpcResultChanged;
 
         internal ImprovDevice(ImprovManager manager, Context context, WorkItemQueue queue, BluetoothDevice device)
         {
@@ -106,21 +148,6 @@ namespace SmartPot.Application.Core
             queue.Enqueue(new Runnable<string, string?>(SendCredentialsSequence, ssid, password));
         }
 
-        public bool IsSame(BluetoothDevice bluetoothDevice)
-        {
-            if (ReferenceEquals(bluetoothDevice, null))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(device, bluetoothDevice))
-            {
-                return true;
-            }
-
-            return String.Equals(device.Address, bluetoothDevice.Address);
-        }
-
         public override int GetHashCode()
         {
             return HashCode.Combine(0x351D, Name, Address);
@@ -161,10 +188,31 @@ namespace SmartPot.Application.Core
             return String.Equals(Name, other.Name) && String.Equals(Address, other.Address);
         }
 
+        private void RaiseConnectStateChangedEvent(EventArgs e)
+        {
+            var handler = ConnectStateChanged;
+
+            if (null != handler)
+            {
+                handler.Invoke(this, e);
+            }
+        }
+
+        private void RaiseRpcResultChangedEvent(EventArgs e)
+        {
+            var handler = RpcResultChanged;
+
+            if (null != handler)
+            {
+                handler.Invoke(this, e);
+            }
+        }
+
         #region RPC commands
 
-        private enum RpcCommand : byte
+        public enum RpcCommand : byte
         {
+            Unknown = 0,
             SendCredentials = 1,
             Identity = 2
         }

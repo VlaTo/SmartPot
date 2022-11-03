@@ -1,24 +1,64 @@
 ﻿
-
 #nullable enable
 
 using Android.Views;
 using Android.Widget;
 using SmartPot.Application.Core;
-using static SmartPot.Application.Views.CredentialsDialog;
 
 namespace SmartPot.Application.Views.Presenters
 {
     internal sealed class CredentialsDialogPresenter
     {
-        private IResultListener? resultListener;
+        private IActionCallback? actionCallback;
         private EditText? inputSsid;
         private EditText? inputPassword;
         private Button? sendButton;
         private Button? cancelButton;
+        private string? ssid;
+        private string? password;
 
-        public CredentialsDialogPresenter()
+        #region IActionCallback
+
+        public enum DialogAction
         {
+            Unknown = -1,
+            Positive,
+            Negative
+        }
+
+        public interface IActionCallback
+        {
+            void OnAction(DialogAction action);
+        }
+
+        #endregion
+
+        public string? Ssid
+        {
+            get => null != inputSsid ? inputSsid.Text : ssid;
+            set
+            {
+                ssid = value;
+
+                if (null != inputSsid)
+                {
+                    inputSsid.Text = value;
+                }
+            }
+        }
+
+        public string? Password
+        {
+            get => null != inputPassword ? inputPassword.Text : password;
+            set
+            {
+                password = value;
+
+                if (null != inputPassword)
+                {
+                    inputPassword.Text = value;
+                }
+            }
         }
 
         public void AttachView(View view)
@@ -30,12 +70,12 @@ namespace SmartPot.Application.Views.Presenters
 
             if (null != inputSsid)
             {
-
+                inputSsid.Text = ssid;
             }
 
             if (null != inputPassword)
             {
-
+                inputPassword.Text = password;
             }
 
             if (null != sendButton)
@@ -54,32 +94,25 @@ namespace SmartPot.Application.Views.Presenters
             ;
         }
 
-        public void SetResultListener(IResultListener listener)
+        public void SetActionCallbacks(IActionCallback callback)
         {
-            resultListener = listener;
+            actionCallback = callback;
         }
         
         private void OnSendButton(View? _)
         {
-            if (null == resultListener)
+            if (null != actionCallback)
             {
-                return;
+                actionCallback.OnAction(DialogAction.Positive);
             }
-
-            var ssid = inputSsid?.Text;
-            var password = inputPassword?.Text;
-            
-            resultListener.OnSend(ssid!, password);
         }
 
         private void OnCancelButton(View? _)
         {
-            if (null == resultListener)
+            if (null != actionCallback)
             {
-                return;
+                actionCallback.OnAction(DialogAction.Negative);
             }
-
-            resultListener.OnDismiss();
         }
     }
 }

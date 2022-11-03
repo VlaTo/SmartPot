@@ -1,18 +1,18 @@
 ﻿
 #nullable enable
 
-using System;
-using System.Diagnostics;
 using Android.Views;
 using Android.Widget;
 using SmartPot.Application.Core;
 using SmartPot.Application.Extensions;
+using System;
+using Android.App;
 using Xamarin.Essentials;
 using ImprovManager = SmartPot.Application.Core.ImprovManager;
 
 namespace SmartPot.Application.Views.Presenters
 {
-    public class ImprovDeviceFragmentPresenter : ImprovManager.ICallback, CredentialsDialog.IResultListener
+    public class ImprovDeviceFragmentPresenter : CredentialsDialog.IDialogResultListener
     {
         private ImprovDevice? improvDevice;
         private MainActivity? parentActivity;
@@ -21,9 +21,8 @@ namespace SmartPot.Application.Views.Presenters
         private TextView? errorCodeTextView;
         private IMenuItem? connectMenuItem;
         private IMenuItem? disconnectMenuItem;
-        private CredentialsDialog? dialog;
 
-        public void SetDeviceAddress(string value)
+        public void SetDeviceAddress(string? value)
         {
             if (null != improvManager)
             {
@@ -36,6 +35,11 @@ namespace SmartPot.Application.Views.Presenters
             {
                 parentActivity.SupportActionBar.Title = actionBarTitle;
             }
+
+            if (null != improvDevice)
+            {
+                improvDevice.ConnectStateChanged += OnConnectStateChanged;
+            }
         }
 
         public void AttachView(View view)
@@ -44,12 +48,12 @@ namespace SmartPot.Application.Views.Presenters
             improvManager = parentActivity.ImprovManager;
             currentStateTextView = view.FindViewById<TextView>(Resource.Id.device_current_state);
             errorCodeTextView = view.FindViewById<TextView>(Resource.Id.device_error_code);
-            improvManager.AddCallback(this);
+            //improvManager.AddCallback(this);
         }
 
         public void DetachView()
         {
-            improvManager?.RemoveCallback(this);
+            //improvManager?.RemoveCallback(this);
         }
 
         public void CreateOptionsMenu(IMenu? menu, MenuInflater inflater)
@@ -96,72 +100,51 @@ namespace SmartPot.Application.Views.Presenters
             return false;
         }
 
-        #region ICallback
-
-        void ImprovManager.ICallback.OnScanningStateChanged(bool scanning)
-        {
-        }
-
-        void ImprovManager.ICallback.OnDeviceFound(ImprovDevice device)
-        {
-            ;
-        }
-
-        #endregion
-
-        #region IResultListener
-
-        void CredentialsDialog.IResultListener.OnSend(string ssid, string? password)
-        {
-            dialog?.Dismiss();
-            improvDevice?.SendCredentials(ssid, password);
-        }
-
-        void CredentialsDialog.IResultListener.OnDismiss()
-        {
-            ;
-        }
-
-        #endregion
-
-        #region ImprovDevice callback
-
-        /*void ImprovDevice.IImprovCallback.OnConnected(bool connected)
+        private void OnConnectStateChanged(object sender, EventArgs e)
         {
             MainThread
                 .InvokeOnMainThreadAsync(() =>
                 {
-                    connectMenuItem?.SetVisible(false == connected);
-                    disconnectMenuItem?.SetVisible(connected);
+                    var isConnected = improvDevice?.IsConnected ?? false;
 
-                    if (connected)
+                    connectMenuItem?.SetVisible(false == isConnected);
+                    disconnectMenuItem?.SetVisible(isConnected);
+
+                    if (isConnected)
                     {
                         if (null != currentStateTextView)
                         {
                             currentStateTextView.Text = "Connected";
                         }
 
-                        dialog = CredentialsDialog
-                            .NewInstance()
-                            .SetResultListener(this);
+                        var dialog = CredentialsDialog.NewInstance();
 
+                        dialog.AddDialogResultListener(this);
                         dialog.Show(parentActivity!.SupportFragmentManager, null);
                     }
                     else
                     {
-                        ;
+                        if (null != currentStateTextView)
+                        {
+                            currentStateTextView.Text = "Not Connected";
+                        }
                     }
                 })
                 .FireAndForget();
-        }*/
+        }
 
-        /*void ImprovDevice.IImprovCallback.OnCredentialsSent()
+        #region IDialogResultListener
+
+        void CredentialsDialog.IDialogResultListener.OnSuccess(Dialog dialog, string ssid, string? password)
         {
-            if (null != currentStateTextView)
-            {
-                currentStateTextView.Text = "Sent";
-            }
-        }*/
+            dialog.Dismiss();
+            improvDevice?.SendCredentials(ssid, password);
+        }
+
+        void CredentialsDialog.IDialogResultListener.OnDismiss(Dialog dialog)
+        {
+            dialog.Dismiss();
+        }
 
         #endregion
     }

@@ -23,10 +23,10 @@ namespace SmartPot.Application.Core
                 {
                     case SequenceStage.Connected:
                     {
-                        var payload = new Payload();
+                        var payload = new PayloadWriter();
 
-                        payload.Write(ssid, Encoding.UTF8);
-                        payload.Write(password, Encoding.UTF8);
+                        payload.WriteString(ssid, Encoding.UTF8);
+                        payload.WriteString(password, Encoding.UTF8);
                         data = payload.Build(false);
 
                         stage = SequenceStage.SendRpcRequest;
@@ -103,15 +103,15 @@ namespace SmartPot.Application.Core
             {
                 stage = SequenceStage.Connected;
             }
-            
-            ;
+
+            RaiseRpcResultChangedEvent(EventArgs.Empty);
         }
 
         private static byte[] BuildPayload(RpcCommand command, byte[]? data)
         {
-            var payload = new Payload()
-                .Write((byte)command)
-                .Write(data);
+            var payload = new PayloadWriter()
+                .WriteByte((byte)command)
+                .WriteBytes(data);
             return payload.Build(true);
         }
     }

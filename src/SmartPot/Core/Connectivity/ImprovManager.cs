@@ -100,7 +100,7 @@ namespace SmartPot.Core.Connectivity
 
                 if (0 < rpcResultCharacteristic.SubscribedClients.Length)
                 {
-                    var buffer = SetupRpcResult();
+                    var buffer = GetRpcResultData();
                     rpcResultCharacteristic.NotifyValue(buffer);
                     Debug.WriteLine("Notifying RPC result");
                 }
@@ -502,7 +502,7 @@ namespace SmartPot.Core.Connectivity
             }*/
         }
 
-        private Buffer SetupRpcResult()
+        private Buffer GetRpcResultData()
         {
             var dw = new DataWriter();
             var resultBytes = Encoding.UTF8.GetBytes(rpcResult.Status);
@@ -531,7 +531,7 @@ namespace SmartPot.Core.Connectivity
             Console.WriteLine($"RpcResult_ReadRequested: command: {rpcResult.Command}, status: {rpcResult.Status}");
 
             var request = e.GetRequest();
-            var buffer = SetupRpcResult();
+            var buffer = GetRpcResultData();
             
             request.RespondWithValue(buffer);
         }

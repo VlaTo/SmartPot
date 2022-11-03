@@ -481,7 +481,7 @@ namespace SmartPot.Application.Core
                 ;
             }
 
-            ;
+            RaiseConnectStateChangedEvent(EventArgs.Empty);
         }
 
         private static byte[] GetEnableDescriptorValue()

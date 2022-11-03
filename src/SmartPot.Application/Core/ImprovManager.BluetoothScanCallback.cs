@@ -1,4 +1,7 @@
-﻿using System;
+﻿
+#nullable enable
+
+using System;
 using System.Collections.Generic;
 using Android.Bluetooth;
 using Android.Bluetooth.LE;
@@ -9,11 +12,22 @@ namespace SmartPot.Application.Core
     {
         private sealed class BluetoothScanCallback : ScanCallback
         {
-            private readonly ImprovManager manager;
-
-            public BluetoothScanCallback(ImprovManager manager)
+            public Action<BluetoothDevice>? ScanResult
             {
-                this.manager = manager;
+                get;
+                set;
+            }
+
+            public Action<ScanFailure>? ScanFailed
+            {
+                get;
+                set;
+            }
+
+            public BluetoothScanCallback()
+            {
+                ScanResult = Stub.Nop;
+                ScanFailed = Stub.Nop;
             }
 
             public override void OnScanResult(ScanCallbackType callbackType, ScanResult? result)
@@ -23,32 +37,43 @@ namespace SmartPot.Application.Core
 
             public override void OnBatchScanResults(IList<ScanResult>? results)
             {
+                base.OnBatchScanResults(results);
+
                 for (var index = 0; null != results && index < results.Count; index++)
                 {
                     var device = results[index].Device;
                     OnDeviceDiscovered(device);
                 }
-
-                base.OnBatchScanResults(results);
             }
 
             public override void OnScanFailed(ScanFailure errorCode)
             {
-                if (ScanFailure.InternalError == errorCode)
-                {
-                    ;
-                }
+                var action = ScanFailed;
 
                 base.OnScanFailed(errorCode);
+
+                if (null != action)
+                {
+                    action.Invoke(errorCode);
+                }
             }
-            
+
             private void OnDeviceDiscovered(BluetoothDevice? device)
             {
-                if (null != device && false == String.IsNullOrEmpty(device.Address))
+                if (null == device || String.IsNullOrEmpty(device.Address))
                 {
-                    manager.OnDeviceFound(device);
+                    return;
+                }
+
+                var action = ScanResult;
+
+                if (null != action)
+                {
+                    action.Invoke(device);
                 }
             }
         }
     }
 }
+
+#nullable restore

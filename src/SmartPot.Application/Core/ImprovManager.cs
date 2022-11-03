@@ -7,10 +7,43 @@ using Android.Bluetooth;
 using Android.Bluetooth.LE;
 using Android.Content;
 using Java.Util;
+using static Android.Bluetooth.BluetoothClass;
 using ScanMode = Android.Bluetooth.LE.ScanMode;
 
 namespace SmartPot.Application.Core
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    public sealed class FoundDeviceEventArgs : EventArgs
+    {
+        public ImprovDevice Device
+        {
+            get;
+        }
+
+        public FoundDeviceEventArgs(ImprovDevice device)
+        {
+            Device = device;
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public sealed class ScanFailedEventArgs : EventArgs
+    {
+        public ScanFailure Failure
+        {
+            get;
+        }
+
+        public ScanFailedEventArgs(ScanFailure failure)
+        {
+            Failure = failure;
+        }
+    }
+
     // https://github.com/improv-wifi/sdk-android/blob/main/library/src/main/java/com/wifi/improv/ImprovManager.kt
     internal sealed partial class ImprovManager : Java.Lang.Object
     {
@@ -19,7 +52,6 @@ namespace SmartPot.Application.Core
         private readonly Context context;
         private readonly BluetoothScanCallback scanCallback;
         private readonly List<ImprovDevice> discoveredDevices;
-        private readonly List<ICallback> callbacks;
         private readonly WorkItemQueue workItemQueue;
         private bool bluetoothManagerAcquired;
         private BluetoothManager? bluetoothManager;
@@ -48,16 +80,11 @@ namespace SmartPot.Application.Core
 
         public ImprovDevice[] Devices => discoveredDevices.ToArray();
 
-        #region ICallback
+        public event EventHandler<FoundDeviceEventArgs>? FoundDevice;
+        
+        public event EventHandler<ScanFailedEventArgs>? ScanFailed;
 
-        public interface ICallback
-        {
-            void OnScanningStateChanged(bool scanning);
-
-            void OnDeviceFound(ImprovDevice device);
-        }
-
-        #endregion
+        public event EventHandler? ScanStateChanged;
 
         public ImprovManager(Context context)
         {
@@ -65,26 +92,11 @@ namespace SmartPot.Application.Core
 
             workItemQueue = new WorkItemQueue();
             discoveredDevices = new List<ImprovDevice>();
-            callbacks = new List<ICallback>();
-            scanCallback = new BluetoothScanCallback(this);
-        }
-
-        public void AddCallback(ICallback value)
-        {
-            if (callbacks.Contains(value))
+            scanCallback = new BluetoothScanCallback
             {
-                return;
-            }
-
-            callbacks.Add(value);
-        }
-
-        public void RemoveCallback(ICallback value)
-        {
-            if (callbacks.Remove(value))
-            {
-                ;
-            }
+                ScanResult = OnScanResult,
+                ScanFailed = OnScanFailed
+            };
         }
 
         public void FindDevices()
@@ -103,7 +115,8 @@ namespace SmartPot.Application.Core
                 var settings = BuildScanSettings();
 
                 IsScanning = true;
-                RaiseOnScanningStateChanged();
+                RaiseScanStateChangedEvent(EventArgs.Empty);
+
                 scanner.StartScan(Array.Empty<ScanFilter>(), settings, scanCallback);
             }
         }
@@ -121,7 +134,8 @@ namespace SmartPot.Application.Core
             {
                 IsScanning = false;
                 scanner.StopScan(scanCallback);
-                RaiseOnScanningStateChanged();
+
+                RaiseScanStateChangedEvent(EventArgs.Empty);
             }
         }
 
@@ -147,24 +161,33 @@ namespace SmartPot.Application.Core
             }
         }*/
 
-        private void RaiseOnScanningStateChanged()
+        private void RaiseScanStateChangedEvent(EventArgs e)
         {
-            var isScanning = IsScanning;
-            var handlers = callbacks.ToArray();
+            var handlers = ScanStateChanged;
 
-            for (var index = 0; index < handlers.Length; index++)
+            if (null != handlers)
             {
-                handlers[index].OnScanningStateChanged(isScanning);
+                handlers.Invoke(this, e);
             }
         }
 
-        private void RaiseOnDeviceFound(ImprovDevice device)
+        private void RaiseFoundDeviceEvent(FoundDeviceEventArgs e)
         {
-            var handlers = callbacks.ToArray();
+            var handlers = FoundDevice;
 
-            for (var index = 0; index < handlers.Length; index++)
+            if (null != handlers)
             {
-                handlers[index].OnDeviceFound(device);
+                handlers.Invoke(this, e);
+            }
+        }
+
+        private void RaiseScanFailedEvent(ScanFailedEventArgs e)
+        {
+            var handlers = ScanFailed;
+
+            if (null != handlers)
+            {
+                handlers.Invoke(this, e);
             }
         }
 
@@ -197,9 +220,15 @@ namespace SmartPot.Application.Core
             return builder.Build()!;
         }*/
 
-        private void OnDeviceFound(BluetoothDevice discoveredDevice)
+        private void OnScanResult(BluetoothDevice discoveredDevice)
         {
-            if (discoveredDevices.Exists(device => device.IsSame(discoveredDevice)))
+
+            bool IsSame(ImprovDevice improvDevice, BluetoothDevice bluetoothDevice)
+            {
+                return String.Equals(improvDevice.Address, bluetoothDevice.Address);
+            }
+
+            if (discoveredDevices.Exists(device => IsSame(device, discoveredDevice)))
             {
                 return;
             }
@@ -207,7 +236,12 @@ namespace SmartPot.Application.Core
             var improvDevice = new ImprovDevice(this, context, workItemQueue, discoveredDevice);
 
             discoveredDevices.Add(improvDevice);
-            RaiseOnDeviceFound(improvDevice);
+            RaiseFoundDeviceEvent(new FoundDeviceEventArgs(improvDevice));
+        }
+
+        private void OnScanFailed(ScanFailure failure)
+        {
+            RaiseScanFailedEvent(new ScanFailedEventArgs(failure));
         }
     }
 }

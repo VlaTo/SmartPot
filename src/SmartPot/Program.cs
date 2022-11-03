@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Threading;
+using Windows.Storage;
 
 namespace SmartPot
 {
@@ -38,6 +39,13 @@ namespace SmartPot
             rtc = CreateRtcDevice(busId);
             eeprom = CreateEepromDevice(busId);
 
+            display.ClearScreen();
+
+            var bitmap = Resource.GetBytes(Resource.BinaryResources.logo);
+
+            display.DrawBitmap(0, 0, 16, 64, bitmap);
+            display.Display();
+
             if (ValidateEepromCrc(eeprom, out var newCrc))
             {
                 Debug.WriteLine($"EEPROM CRC failed!");
@@ -46,15 +54,27 @@ namespace SmartPot
 
             // Display setup
             display.Font = new BasicFont();
-            display.ClearScreen();
 
-            var drives = Directory.GetLogicalDrives();
+            //var drives = Directory.GetLogicalDrives();
 
-            Debug.WriteLine("Logical drives:");
+            var folder = KnownFolders.InternalDevices.CreateFolder(
+                "Wifi",
+                CreationCollisionOption.OpenIfExists
+            );
+
+            var file = folder.CreateFile(
+                "settings.bin",
+                CreationCollisionOption.OpenIfExists
+            );
+
+            var buffer = FileIO.ReadBuffer(file);
+
+            /*Debug.WriteLine("Logical drives:");
             for (int index = 0; index < drives.Length; index++)
             {
+                // [0] I:\ -- internal flash drive
                 Debug.WriteLine($"[{index}] {drives[index]}");
-            }
+            }*/
 
             // Creating ImprovManager
             improvManager = new ImprovManager();
