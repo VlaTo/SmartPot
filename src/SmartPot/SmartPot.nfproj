@@ -29,10 +29,9 @@
     <Compile Include="Core\Devices\At24Cxx.cs" />
     <Compile Include="Core\Devices\Display.cs" />
     <Compile Include="Core\Devices\Extensions\Ssd1306Extensions.cs" />
-    <Compile Include="Core\Hosted\Services\ImprovDeviceService.cs" />
-    <Compile Include="Core\Hosted\Services\UserControllerService.cs" />
     <Compile Include="Core\Hosted\UserController.cs" />
     <Compile Include="Core\IUserControllerState.cs" />
+    <Compile Include="Core\LedBlink.cs" />
     <Compile Include="Core\Messaging\IMessage.cs" />
     <Compile Include="Core\Messaging\MessageHub.cs" />
     <Compile Include="Core\Messaging\MessageQueue.cs" />
@@ -64,17 +63,11 @@
     <Reference Include="mscorlib">
       <HintPath>packages\nanoFramework.CoreLibrary.1.12.0\lib\mscorlib.dll</HintPath>
     </Reference>
-    <Reference Include="nanoFramework.DependencyInjection">
-      <HintPath>packages\nanoFramework.DependencyInjection.1.0.12\lib\nanoFramework.DependencyInjection.dll</HintPath>
-    </Reference>
     <Reference Include="nanoFramework.Device.Bluetooth">
       <HintPath>packages\nanoFramework.Device.Bluetooth.1.1.16\lib\nanoFramework.Device.Bluetooth.dll</HintPath>
     </Reference>
     <Reference Include="nanoFramework.Hardware.Esp32">
       <HintPath>packages\nanoFramework.Hardware.Esp32.1.4.1\lib\nanoFramework.Hardware.Esp32.dll</HintPath>
-    </Reference>
-    <Reference Include="nanoFramework.Hosting">
-      <HintPath>packages\nanoFramework.Hosting.1.0.16\lib\nanoFramework.Hosting.dll</HintPath>
     </Reference>
     <Reference Include="nanoFramework.Networking.Sntp">
       <HintPath>packages\nanoFramework.Networking.Sntp.1.6.1\lib\nanoFramework.Networking.Sntp.dll</HintPath>
@@ -112,20 +105,11 @@
     <Reference Include="System.Net">
       <HintPath>packages\nanoFramework.System.Net.1.10.21\lib\System.Net.dll</HintPath>
     </Reference>
-    <Reference Include="System.Net.Http">
-      <HintPath>packages\nanoFramework.System.Net.Http.1.5.24\lib\System.Net.Http.dll</HintPath>
-    </Reference>
     <Reference Include="System.Threading">
       <HintPath>packages\nanoFramework.System.Threading.1.1.8\lib\System.Threading.dll</HintPath>
     </Reference>
     <Reference Include="UnitsNet.Temperature">
       <HintPath>packages\UnitsNet.nanoFramework.Temperature.4.145.0\lib\UnitsNet.Temperature.dll</HintPath>
-    </Reference>
-    <Reference Include="Windows.Storage">
-      <HintPath>..\..\packages\nanoFramework.Windows.Storage.1.5.6\lib\Windows.Storage.dll</HintPath>
-    </Reference>
-    <Reference Include="Windows.Storage.Streams">
-      <HintPath>..\..\packages\nanoFramework.Windows.Storage.Streams.1.14.8\lib\Windows.Storage.Streams.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -137,6 +121,9 @@
       <Generator>nFResXFileCodeGenerator</Generator>
       <LastGenOutput>Resource.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Core\Hosted\Services\" />
   </ItemGroup>
   <Import Project="$(NanoFrameworkProjectSystemPath)NFProjectSystem.CSharp.targets" Condition="Exists('$(NanoFrameworkProjectSystemPath)NFProjectSystem.CSharp.targets')" />
   <ProjectExtensions>

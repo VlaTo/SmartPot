@@ -5,12 +5,11 @@ using SmartPot.Core;
 using SmartPot.Core.Connectivity;
 using SmartPot.Core.Devices;
 using System;
+using System.Device.Gpio;
 using System.Device.I2c;
 using System.Diagnostics;
-using System.IO;
 using System.Net.NetworkInformation;
 using System.Threading;
-using Windows.Storage;
 
 namespace SmartPot
 {
@@ -19,6 +18,7 @@ namespace SmartPot
     // 0x68 - DS3231
     public class Program
     {
+        private static GpioController gpioController;
         private static Display display;
         private static Ds3231 rtc;
         private static At24Cxx eeprom;
@@ -32,6 +32,10 @@ namespace SmartPot
 
             //Sleep.EnableWakeupByPin(Sleep.WakeupGpioPin.Pin0, 0);
             //Sleep.StartDeepSleep();
+
+            gpioController = new GpioController();
+            
+            var led = gpioController.OpenPin(Gpio.IO05, PinMode.Output);
 
             const int busId = 1;
             
@@ -48,33 +52,12 @@ namespace SmartPot
 
             if (ValidateEepromCrc(eeprom, out var newCrc))
             {
-                Debug.WriteLine($"EEPROM CRC failed!");
+                Debug.WriteLine("EEPROM CRC failed!");
                 //eeprom.Write(0x00, new[] { newCrc });
             }
 
             // Display setup
             display.Font = new BasicFont();
-
-            //var drives = Directory.GetLogicalDrives();
-
-            var folder = KnownFolders.InternalDevices.CreateFolder(
-                "Wifi",
-                CreationCollisionOption.OpenIfExists
-            );
-
-            var file = folder.CreateFile(
-                "settings.bin",
-                CreationCollisionOption.OpenIfExists
-            );
-
-            var buffer = FileIO.ReadBuffer(file);
-
-            /*Debug.WriteLine("Logical drives:");
-            for (int index = 0; index < drives.Length; index++)
-            {
-                // [0] I:\ -- internal flash drive
-                Debug.WriteLine($"[{index}] {drives[index]}");
-            }*/
 
             // Creating ImprovManager
             improvManager = new ImprovManager();
@@ -93,62 +76,31 @@ namespace SmartPot
             // For this sample we will let iprov do it, uncomment next line to try user event. See event handler
             //manager.OnProvisioned += DoProvisioned;
 
-            improvManager.Start(GetDeviceName());
+            var cancellation = new CancellationTokenSource();
+            var blink = new LedBlink(led, cancellation.Token);
+            var thread = new Thread(blink.Run);
 
-            Debug.WriteLine("Advertising started");
+            improvManager.Start(GetDeviceName());
 
             // You may need a physical button to be pressed to authorise the provisioning (security)
             // Wait for button press and call Authorise method
             // For out test we will just Authorise
             improvManager.Authorize(true);
-            
+
             // Now wait for Device to be Provisioned
             // we could also just use the OnProvisioningComplete event
-            var lastState = improvManager.CurrentState;
+
+            thread.Start();
 
             while (ImprovState.Provisioned != improvManager.CurrentState)
             {
-                var currentState = improvManager.CurrentState;
-
-                if (lastState != currentState)
-                {
-                    switch (currentState)
-                    {
-                        case ImprovState.Authorized:
-                        {
-                            display.DrawString(0, 0, "Waiting for");
-                            display.DrawString(0, 11, "provision");
-                            display.Display();
-
-                            break;
-                        }
-
-                        case ImprovState.Provisioning:
-                        {
-                            display.DrawString(0, 0, "Provisioning");
-                            //display.DrawString(0, 11, "provisioned");
-                            display.Display();
-
-                            break;
-                        }
-
-                        case ImprovState.Provisioned:
-                        {
-                            display.DrawString(0, 0, "Device");
-                            display.DrawString(0, 11, "provisioned");
-                            display.Display();
-
-                            break;
-                        }
-                    }
-
-                    lastState = currentState;
-                }
-
                 Thread.Sleep(100);
             }
 
             improvManager.Stop();
+
+            cancellation.Cancel();
+            thread.Join();
             
             /*var host = Host
                 .CreateDefaultBuilder()
