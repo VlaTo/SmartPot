@@ -34,8 +34,8 @@ namespace SmartPot
             //Sleep.StartDeepSleep();
 
             gpioController = new GpioController();
-            
             var led = gpioController.OpenPin(Gpio.IO05, PinMode.Output);
+            led.Write(PinValue.High);
 
             const int busId = 1;
             
